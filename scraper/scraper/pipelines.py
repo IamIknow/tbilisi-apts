@@ -7,10 +7,17 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from kafka import KafkaProducer
+from redis import Redis
+from scrapy.exceptions import DropItem
 
 import json
 
 from scraper.items import ApartmentItem
+
+# TODO Read from env variables
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+REDIS_PASSWORD = "password"
 
 
 class JsonWriterPipeline:
@@ -26,12 +33,30 @@ class JsonWriterPipeline:
         return item
 
 
+class ApartmentsStoragePipeline:
+    def __init__(self) -> None:
+        self.redis = Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
+
+    def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
+        key = f"user1:{item.id}"
+
+        if self.redis.get(key):
+            raise DropItem(f"Apartment was already processed")
+
+        self.redis.set(key, json.dumps(ItemAdapter(item).asdict()))
+        return item
+
+
 class KafkaProducerPipeline:
     def __init__(self) -> None:
         self.producer = KafkaProducer(
             value_serializer=lambda x: json.dumps(x).encode("utf-8")
         )
 
-    def process_item(self, item: ApartmentItem, spider):
+    def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
         print(item)
-        self.producer.send(topic="apartments_topic", value=ItemAdapter(item).asdict())
+        self.producer.send(
+            topic="apartments_topic",
+            value=ItemAdapter(item).asdict(),
+        )
+        return item
