@@ -56,7 +56,7 @@ class KafkaProducerPipeline:
     def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
         print(item)
         self.producer.send(
-            topic="apartments_topic",
+            topic="apartments_events",
             value=ItemAdapter(item).asdict(),
         )
         return item

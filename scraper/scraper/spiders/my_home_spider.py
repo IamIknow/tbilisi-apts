@@ -30,4 +30,5 @@ class MyHomeSpider(scrapy.Spider):
             image_links=response.css(
                 MY_HOME_GE_SELECTORS.images_links_selector
             ).getall(),
+            user_id=int(self.user_id),
         )

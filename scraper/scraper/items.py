@@ -14,3 +14,4 @@ class ApartmentItem:
     size: str | None = field(default=None)
     link: str | None = field(default=None)
     image_links: list[str] | None = field(default=None)
+    user_id: int = field(default=0)
