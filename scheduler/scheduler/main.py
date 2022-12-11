@@ -60,7 +60,7 @@ async def consume_subscriptions_kafka_messages():
     try:
         async for msg in consumer:
             logging.info("Consumed new subscription: %s", msg.value)
-            user_settings_repository.add(
+            user_settings_repository.add_or_update(
                 setting=UserSetting(user_id=msg.value["user_id"])
             )
 

@@ -3,7 +3,8 @@ import json
 import logging
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
-from telegram import Update, Bot
+from telegram import Update, Bot, InputMediaPhoto
+from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, ContextTypes, ApplicationBuilder, Application
 
 from config import (
@@ -27,6 +28,39 @@ async def init_producer() -> None:
     await producer.start()
 
 
+def get_message_layout(apartment) -> str:
+    text = f"""Price: {apartment["price"]} $
+    Area: {apartment["size"]}
+    Link: <a href=\"{apartment["link"]}\">Link</a>"""
+    return text
+
+
+async def send_apartment_photos(apartment) -> None:
+    photos = [
+        InputMediaPhoto(image_link) for image_link in apartment["image_links"][:5]
+    ]
+    try:
+        await bot.send_media_group(chat_id=apartment["user_id"], media=photos)
+    except Exception as e:
+        logging.exception(e)
+
+
+async def send_apartment_text(apartment) -> None:
+    try:
+        await bot.send_message(
+            text=get_message_layout(apartment),
+            chat_id=apartment["user_id"],
+            parse_mode=ParseMode.HTML,
+        )
+    except Exception as e:
+        logging.exception(e)
+
+
+async def send_apartment_message(apartment) -> None:
+    await send_apartment_photos(apartment)
+    await send_apartment_text(apartment)
+
+
 async def consume_apartments_kafka_messages() -> None:
     consumer = AIOKafkaConsumer(
         KAFKA_APARTMENTS_TOPIC,
@@ -38,11 +72,9 @@ async def consume_apartments_kafka_messages() -> None:
     try:
         async for message in consumer:
             logging.info("key=%s value=%s" % (message.key, message.value))
-            await bot.send_message(
-                text=message.value["link"], chat_id=message.value["user_id"]
-            )
-
+            await send_apartment_message(apartment=message.value)
     finally:
+        logging.info("Stopping the consumer...")
         await consumer.stop()
 
 

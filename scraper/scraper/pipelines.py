@@ -13,11 +13,13 @@ from scrapy.exceptions import DropItem
 import json
 
 from scraper.items import ApartmentItem
-
-# TODO Read from env variables
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-REDIS_PASSWORD = "password"
+from scraper.settings import (
+    KAFKA_APARTMENTS_TOPIC,
+    KAFKA_BOOTSTRAP_SERVER,
+    REDIS_HOST,
+    REDIS_PASSWORD,
+    REDIS_PORT,
+)
 
 
 class JsonWriterPipeline:
@@ -38,7 +40,7 @@ class ApartmentsStoragePipeline:
         self.redis = Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
 
     def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
-        key = f"user1:{item.id}"
+        key = f"user-{item.user_id}:{item.id}"
 
         if self.redis.get(key):
             raise DropItem(f"Apartment was already processed")
@@ -50,13 +52,14 @@ class ApartmentsStoragePipeline:
 class KafkaProducerPipeline:
     def __init__(self) -> None:
         self.producer = KafkaProducer(
-            value_serializer=lambda x: json.dumps(x).encode("utf-8")
+            bootstrap_servers=KAFKA_BOOTSTRAP_SERVER,
+            value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
 
     def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
         print(item)
         self.producer.send(
-            topic="apartments_events",
+            topic=KAFKA_APARTMENTS_TOPIC,
             value=ItemAdapter(item).asdict(),
         )
         return item

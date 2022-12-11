@@ -33,6 +33,54 @@ services:
     image: 'postgres:15.1'
     ports:
       - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: tbilisi_apts
+
+  scraper:
+    build: ./scraper
+    volumes:
+      - ./scraper/scraper:/app/scraper
+    env_file:
+      - ./scraper/.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVER=broker:29092
+      - REDIS_HOST=redis
+    ports:
+      - 6800:6800
+    depends_on:
+      - broker
+      - redis
+
+  bot:
+    build: './bot'
+    volumes:
+      - ./bot/bot:/app
+    env_file:
+      - ./bot/.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVER=broker:29092
+    depends_on:
+      - broker
+    restart: on-failure:10
+
+  scheduler:
+    build: './scheduler'
+    volumes:
+      - ./scheduler/scheduler:/app/scheduler
+    env_file:
+      - ./scheduler/.env
+    environment:
+      - POSTGRES_HOST=postgres
+      - KAFKA_BOOTSTRAP_SERVER=broker:29092
+      - SCRAPY_SERVER_URL=http://scraper:6800/schedule.json
+    depends_on:
+      - broker
+      - postgres
+      - scraper
+    restart: on-failure:10
+
+volumes:
+  pgdata:
