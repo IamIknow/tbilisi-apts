@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot
+  labels:
+    app: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+    spec:
+      containers:
+        - name: bot
+          image: public.ecr.aws/y1v1z0y3/tbilisi_apts_bot
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: kafka-service:9092
+            - name: KAFKA_APARTMENTS_TOPIC
+              value: apartments_events
+            - name: KAFKA_SUBSCRIPTIONS_TOPIC
+              value: subscriptions_events
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-token
+                  key: telegram-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot
+  labels:
+    app: bot
+spec:
+  type: NodePort
+  ports:
+    - port: 9092
+      name: kafka
+  selector:
+    app: bot

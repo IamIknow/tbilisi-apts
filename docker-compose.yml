@@ -27,7 +27,6 @@ services:
     image: 'redis:7.0.5'
     ports:
       - '6379:6379'
-    command: redis-server --requirepass password
 
   postgres:
     image: 'postgres:15.1'

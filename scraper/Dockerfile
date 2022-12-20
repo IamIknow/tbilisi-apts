@@ -1,5 +1,5 @@
 # TODO: Change base image to slim or use miltistage build to reduce image size
-FROM python:3.10
+FROM python:3.10-slim
 
 WORKDIR /app
 

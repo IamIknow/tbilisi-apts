@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  labels:
+    app: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: public.ecr.aws/y1v1z0y3/tbilisi_apts_scheduler
+          env:
+            - name: SCRAPY_SERVER_URL
+              value: http://scraper:6800/schedule.json
+            - name: SCHEDULER_INTERVAL
+              value: '30'
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: kafka-service:9092
+            - name: KAFKA_SUBSCRIPTIONS_TOPIC
+              value: subscriptions_events
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-password
+                  key: postgres-password
+            - name: POSTGRES_HOST
+              value: tbilisi-apts.cucx1l1uzzfz.us-east-1.rds.amazonaws.com
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_USER
+              value: tbilisi_apts
+            - name: POSTGRES_DB
+              value: postgres

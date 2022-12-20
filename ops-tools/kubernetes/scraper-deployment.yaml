@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scraper
+  labels:
+    app: scraper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scraper
+  template:
+    metadata:
+      labels:
+        app: scraper
+    spec:
+      containers:
+        - name: scraper
+          image: public.ecr.aws/y1v1z0y3/tbilisi_apts_scraper
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6800
+              name: scraper
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: kafka-service:9092
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: '6379'
+            - name: KAFKA_APARTMENTS_TOPIC
+              value: apartments_events
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scraper
+  labels:
+    app: scraper
+spec:
+  type: NodePort
+  ports:
+    - port: 6800
+      name: scraper
+  selector:
+    app: scraper

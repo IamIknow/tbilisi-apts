@@ -17,7 +17,6 @@ from scraper.settings import (
     KAFKA_APARTMENTS_TOPIC,
     KAFKA_BOOTSTRAP_SERVER,
     REDIS_HOST,
-    REDIS_PASSWORD,
     REDIS_PORT,
 )
 
@@ -37,7 +36,7 @@ class JsonWriterPipeline:
 
 class ApartmentsStoragePipeline:
     def __init__(self) -> None:
-        self.redis = Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
+        self.redis = Redis(host=REDIS_HOST, port=REDIS_PORT)
 
     def process_item(self, item: ApartmentItem, spider) -> ApartmentItem:
         key = f"user-{item.user_id}:{item.id}"
